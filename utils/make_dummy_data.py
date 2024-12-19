@@ -20,7 +20,14 @@ def main():
         
         # idk just picking an arbitrary low and high
         scaling_factors = np.random.uniform(low=50,high=500,size=(4, 1))
-        df[:,nth_sample] = np.dot(data.values,scaling_factors).flatten()
+        rescaled_data = np.dot(data.values,scaling_factors).flatten()
+
+        # add some noise to the data maybe like 20% the low value
+        noise_power = 0.2 * 50
+        noise = np.random.randn(len(rescaled_data)) * noise_power
+
+        # add noise and append sample name
+        df[:,nth_sample] = rescaled_data + noise
         cols.append(f'Sample #{nth_sample+1}')
 
     # cast the array to a df
