@@ -37,7 +37,7 @@ def plot_df_out(df_out):
 def main():
 
     # get relative path to data sources (i.e. ./../data/sources)
-    path_to_sources = Path(__file__).parent.parent / 'data' / 'sources'
+    path_to_sources = Path(__file__).parent.parent / 'data_sources'
 
     # get the csv files and read in the data
     source_dict = {file.stem:pd.read_csv(file, index_col=0) for file in path_to_sources.glob('*.csv')}
@@ -59,7 +59,7 @@ def main():
     # plot_df_out(df_out=df_out)
     
     # save data
-    outfile_path = path_to_sources.parent
+    outfile_path = Path(__file__).parent.parent / 'data'
     df_out.to_csv(outfile_path / 'components.csv', index=True)
 
 
