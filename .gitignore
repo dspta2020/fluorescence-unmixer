@@ -1,4 +1,6 @@
-
-
 # dirs to ignore
 /venv
+
+# dont want to fill up the entire folder
+/results/*
+!/results/Sample 1.csv

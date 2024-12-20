@@ -73,6 +73,21 @@ def main():
         nth_fit_components = components.values * nth_fit_coeffs[0]
         nth_fit_full = components.values @ nth_fit_coeffs[0]
 
+        # use pandas to write the results to a df then export to csv
+        df = pd.DataFrame()
+        df['Raw Data'] = data[nth_sample]
+        df['Fit Data'] = nth_fit_full
+        for nth_component, col in enumerate(components.columns):
+            df[f'{col} fit'] = nth_fit_components[:,nth_component]
+        for nth_component, col in enumerate(components.columns):
+            df[f'{col} coeff'] = np.nan
+            df.loc[df.index[0], f'{col} coeff'] = nth_fit_coeffs[0][nth_component]
+        
+        df.to_csv(f'./results/{nth_sample}.csv')
+
+        if n > 5:
+            break 
+
 
 if __name__ == '__main__':
 

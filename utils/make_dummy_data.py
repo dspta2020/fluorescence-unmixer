@@ -28,7 +28,7 @@ def main():
 
         # add noise and append sample name
         df[:,nth_sample] = rescaled_data + noise
-        cols.append(f'Sample #{nth_sample+1}')
+        cols.append(f'Sample {nth_sample+1}')
 
     # cast the array to a df
     df = pd.DataFrame(df)
