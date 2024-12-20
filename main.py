@@ -85,9 +85,6 @@ def main():
         
         df.to_csv(f'./results/{nth_sample}.csv')
 
-        if n > 5:
-            break 
-
 
 if __name__ == '__main__':
 
