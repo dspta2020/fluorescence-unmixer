@@ -1,5 +1,6 @@
 # dirs to ignore
 /venv
+/uploads/*
 
 # dont want to fill up the entire folder
 /results/*

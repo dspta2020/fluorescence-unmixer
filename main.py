@@ -1,10 +1,19 @@
-import time
+import os
 from pathlib import Path
 
-import pandas as pd 
-import numpy as np 
+from flask import Flask, render_template, request, redirect, url_for, send_file
+
+import pandas as pd
+import numpy as np
 import scipy.optimize
-import matplotlib.pyplot as plt
+
+# sets the working dir path to be the file directory
+app = Flask(__name__)
+UPLOAD_FOLDER = './uploads'
+RESULTS_FOLDER = './results'
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 
 def interpolate_df(range_max, range_min, df):
@@ -43,25 +52,45 @@ def interpolate_df(range_max, range_min, df):
 
     return new_df
 
-def main():
+# this is the homepage of the application and will return the index.html when someone access this
+@app.route('/')
+def index():
+    # this html is in the templates folder
+    return render_template('index.html')
+
+# here we want to only allow POST methods which sends data to the server (ie this app)
+@app.route('/upload', methods=['POST'])
+def upload_files():
+
+    # check that files have been selected
+    if 'data_file' not in request.files or 'components_file' not in request.files:
+        return "Please upload both files.", 400
+
+    # not sure what this is doing here
+    data_file = request.files['data_file']
+    components_file = request.files['components_file']
 
     # get the paths to data
-    path_to_data = Path('./data/test_data.csv')
-    path_to_components = Path('./data/components.csv')
+    data_path = os.path.join(UPLOAD_FOLDER, 'data.csv')
+    components_path = os.path.join(UPLOAD_FOLDER, 'components.csv')
+    
+    # save the files into the uploads folder
+    data_file.save(data_path)
+    components_file.save(components_path)
 
     # read in the data
-    data = pd.read_csv(path_to_data, index_col=0)
-    components = pd.read_csv(path_to_components, index_col=0)
+    data = pd.read_csv(data_path, index_col=0)
+    components = pd.read_csv(components_path, index_col=0)
 
-    # determine the max wavelength range
+    # get the max range of wavelengths sampled 
     wl_range = np.array([data.index.max(), data.index.min(), components.index.max(), components.index.min()])
     
-    # interpolate the data so its on same wavelength interval 
-    data = interpolate_df(wl_range.max(),wl_range.min(),data)
-    components = interpolate_df(wl_range.max(),wl_range.min(),components)
-    
+    # interpolate to ensure the same wavelength sampling
+    data = interpolate_df(wl_range.max(), wl_range.min(), data)
+    components = interpolate_df(wl_range.max(), wl_range.min(), components)
+
     # loop through each test sample and fit
-    for n, nth_sample in enumerate(data.columns):
+    for _, nth_sample in enumerate(data.columns):
         '''
         For reference the scipy documentation states the nnls algorithm is from:
 
@@ -78,20 +107,30 @@ def main():
         df['Raw Data'] = data[nth_sample]
         df['Fit Data'] = nth_fit_full
         for nth_component, col in enumerate(components.columns):
-            df[f'{col} fit'] = nth_fit_components[:,nth_component]
+            df[f'{col} fit'] = nth_fit_components[:, nth_component]
         for nth_component, col in enumerate(components.columns):
             df[f'{col} coeff'] = np.nan
             df.loc[df.index[0], f'{col} coeff'] = nth_fit_coeffs[0][nth_component]
-        
-        df.to_csv(f'./results/{nth_sample}.csv')
+
+        # save the results path to the results folder
+        result_path = os.path.join(RESULTS_FOLDER, f'{nth_sample}.csv')
+        df.to_csv(result_path)
+
+    # after all the files are saved then redirect users to the results page below
+    return redirect(url_for('download_results'))
+
+
+@app.route('/results')
+def download_results():
+    files = sorted([file for file in os.listdir(RESULTS_FOLDER)])
+    return render_template('results.html', files=files)
+
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    path = os.path.join(RESULTS_FOLDER, filename)
+    return send_file(path, as_attachment=True)
 
 
 if __name__ == '__main__':
-
-    print(f"Running File: {Path(__file__).name}")
-
-    start_time = time.perf_counter()
-    main()
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
-    print(f"Elapsed time: {elapsed_time:.6f} seconds")
+    app.run(debug=True)
