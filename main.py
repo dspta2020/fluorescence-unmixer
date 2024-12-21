@@ -6,6 +6,9 @@ import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
 
+import tkinter as tk 
+from tkinter import filedialog
+
 
 def interpolate_df(range_max, range_min, df):
 
@@ -43,12 +46,36 @@ def interpolate_df(range_max, range_min, df):
 
     return new_df
 
+def uigetfile(filetypes=(("CSV files", "*.csv"), ("All files", "*.*")),title="Select a file",initialdir="."):
+
+    root = tk.Tk()
+    root.withdraw()  # Hide the main tkinter window
+    root.update()  # Process events to avoid issues with dialogs
+    file_path = filedialog.askopenfilename(filetypes=filetypes, title=title, initialdir=initialdir)
+    root.destroy()  # Close the tkinter root window
+    return file_path
+
+def uigetdir(title="Select a directory", initialdir="."):
+
+    root = tk.Tk()
+    root.withdraw()  # Hide the main tkinter window
+    root.update()  # Process events to avoid issues with dialogs
+    directory_path = filedialog.askdirectory(title=title, initialdir=initialdir)
+    root.destroy()  # Close the tkinter root window
+    return directory_path
+
 def main():
 
     # get the paths to data
+    # path_to_data = uigetfile(filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],title='Select Test Data CSV File',initialdir='.')
+    # path_to_components = uigetfile(filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],title='Select Component Data CSV File',initialdir='.')
+    # for debuggint 
     path_to_data = Path('./data/test_data.csv')
     path_to_components = Path('./data/components.csv')
 
+    if not path_to_data or not path_to_components:
+        raise FileNotFoundError("Files not selected. Please select a files to proceed.")
+        
     # read in the data
     data = pd.read_csv(path_to_data, index_col=0)
     components = pd.read_csv(path_to_components, index_col=0)
@@ -59,7 +86,10 @@ def main():
     # interpolate the data so its on same wavelength interval 
     data = interpolate_df(wl_range.max(),wl_range.min(),data)
     components = interpolate_df(wl_range.max(),wl_range.min(),components)
-    
+
+    # get the path to where to save results
+    path_to_results = uigetdir(title='Select Directory to Save Results',initialdir='.')
+
     # loop through each test sample and fit
     for n, nth_sample in enumerate(data.columns):
         '''
@@ -83,7 +113,7 @@ def main():
             df[f'{col} coeff'] = np.nan
             df.loc[df.index[0], f'{col} coeff'] = nth_fit_coeffs[0][nth_component]
         
-        df.to_csv(f'./results/{nth_sample}.csv')
+        df.to_csv(f'{path_to_results}/{nth_sample}.csv')
 
 
 if __name__ == '__main__':
